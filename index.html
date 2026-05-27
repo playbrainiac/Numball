@@ -528,7 +528,7 @@ function showResults() {
 function shareScore() {
   const total = sessionResults.reduce((a,r)=>a+r.pts,0);
   const bars = sessionResults.map(r=>r.pts>=190?'🟨':r.pts>=140?'🟩':r.pts>=70?'🟦':'🟥').join('');
-  const text = `🎯 NUMBALL · Day ${currentDay}\n${bars}\n${total} / 1000 pts\nCan you beat me?\nnumball.vercel.app`;
+  const text = `🎯 NUMBALL · Day ${currentDay}\n${bars}\n${total} / 1000 pts\nCan you beat me?\nhttps://numball.vercel.app`;
   if (navigator.share) {
     navigator.share({ text }).catch(()=>{});
   } else {
