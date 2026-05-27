@@ -554,8 +554,11 @@ function showArchive() {
 
 function startCountdown() {
   const tick=()=>{
-    const now=new Date(), tm=new Date(now); tm.setHours(24,0,0,0);
-    const diff=tm-now, h=Math.floor(diff/3600000), m=Math.floor((diff%3600000)/60000), s=Math.floor((diff%60000)/1000);
+    const now=new Date();
+    const next=new Date(now);
+    next.setUTCHours(8,0,0,0);
+    if (next <= now) next.setUTCDate(next.getUTCDate()+1);
+    const diff=next-now, h=Math.floor(diff/3600000), m=Math.floor((diff%3600000)/60000), s=Math.floor((diff%60000)/1000);
     const el=document.getElementById('countdown');
     if(el) el.textContent=`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
   };
