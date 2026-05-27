@@ -236,44 +236,39 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
       <div class="scoring-pts" style="color:var(--accent)">200</div>
     </div>
     <div class="scoring-row">
-      <div class="scoring-pct">Within 1%</div>
+      <div class="scoring-pct">Within 5%</div>
       <div class="scoring-bar-wrap"><div class="scoring-bar" style="width:95%;background:var(--accent)"></div></div>
       <div class="scoring-pts" style="color:var(--accent)">190</div>
     </div>
     <div class="scoring-row">
-      <div class="scoring-pct">Within 5%</div>
+      <div class="scoring-pct">Within 15%</div>
       <div class="scoring-bar-wrap"><div class="scoring-bar" style="width:85%;background:var(--green)"></div></div>
       <div class="scoring-pts" style="color:var(--green)">170</div>
     </div>
     <div class="scoring-row">
-      <div class="scoring-pct">Within 10%</div>
+      <div class="scoring-pct">Within 30%</div>
       <div class="scoring-bar-wrap"><div class="scoring-bar" style="width:70%;background:var(--green)"></div></div>
       <div class="scoring-pts" style="color:var(--green)">140</div>
     </div>
     <div class="scoring-row">
-      <div class="scoring-pct">Within 20%</div>
-      <div class="scoring-bar-wrap"><div class="scoring-bar" style="width:55%;background:var(--blue)"></div></div>
-      <div class="scoring-pts" style="color:var(--blue)">110</div>
-    </div>
-    <div class="scoring-row">
-      <div class="scoring-pct">Within 35%</div>
-      <div class="scoring-bar-wrap"><div class="scoring-bar" style="width:40%;background:var(--blue)"></div></div>
-      <div class="scoring-pts" style="color:var(--blue)">80</div>
-    </div>
-    <div class="scoring-row">
       <div class="scoring-pct">Within 50%</div>
-      <div class="scoring-bar-wrap"><div class="scoring-bar" style="width:25%;background:var(--red)"></div></div>
-      <div class="scoring-pts" style="color:var(--red)">50</div>
+      <div class="scoring-bar-wrap"><div class="scoring-bar" style="width:50%;background:var(--blue)"></div></div>
+      <div class="scoring-pts" style="color:var(--blue)">100</div>
     </div>
     <div class="scoring-row">
-      <div class="scoring-pct">Within 100%</div>
-      <div class="scoring-bar-wrap"><div class="scoring-bar" style="width:10%;background:var(--red)"></div></div>
-      <div class="scoring-pts" style="color:var(--red)">20</div>
+      <div class="scoring-pct">Within 75%</div>
+      <div class="scoring-bar-wrap"><div class="scoring-bar" style="width:35%;background:var(--blue)"></div></div>
+      <div class="scoring-pts" style="color:var(--blue)">70</div>
+    </div>
+    <div class="scoring-row">
+      <div class="scoring-pct">Within 150%</div>
+      <div class="scoring-bar-wrap"><div class="scoring-bar" style="width:20%;background:var(--red)"></div></div>
+      <div class="scoring-pts" style="color:var(--red)">40</div>
     </div>
     <div class="scoring-row">
       <div class="scoring-pct">Way off</div>
-      <div class="scoring-bar-wrap"><div class="scoring-bar" style="width:5%;background:var(--red)"></div></div>
-      <div class="scoring-pts" style="color:var(--red)">10</div>
+      <div class="scoring-bar-wrap"><div class="scoring-bar" style="width:10%;background:var(--red)"></div></div>
+      <div class="scoring-pts" style="color:var(--red)">20</div>
     </div>
     <button class="modal-close" onclick="document.getElementById('scoringModal').classList.remove('open')">Got it</button>
   </div>
@@ -425,20 +420,19 @@ function getDayQuestions(dayNum) {
 function calcScore(guess, answer) {
   if (guess === answer) return 200;
   const ratio = Math.abs(guess - answer) / (Math.abs(answer) || 1);
-  if (ratio <= 0.01) return 190;
-  if (ratio <= 0.05) return 170;
-  if (ratio <= 0.10) return 140;
-  if (ratio <= 0.20) return 110;
-  if (ratio <= 0.35) return 80;
-  if (ratio <= 0.50) return 50;
-  if (ratio <= 1.00) return 20;
-  return 10;
+  if (ratio <= 0.05) return 190;
+  if (ratio <= 0.15) return 170;
+  if (ratio <= 0.30) return 140;
+  if (ratio <= 0.50) return 100;
+  if (ratio <= 0.75) return 70;
+  if (ratio <= 1.50) return 40;
+  return 20;
 }
 function getScoreClass(pts) {
-  return pts>=190?'perfect':pts>=140?'close':pts>=80?'okay':'miss';
+  return pts>=190?'perfect':pts>=140?'close':pts>=70?'okay':'miss';
 }
 function getBarColor(pts) {
-  return pts>=190?'var(--accent)':pts>=140?'var(--green)':pts>=80?'var(--blue)':'var(--red)';
+  return pts>=190?'var(--accent)':pts>=140?'var(--green)':pts>=70?'var(--blue)':'var(--red)';
 }
 function getRank(total) {
   const p = total / 1000;
@@ -568,8 +562,8 @@ function showResults() {
 
 function shareScore() {
   const total = sessionResults.reduce((a,r)=>a+r.pts,0);
-  const bars = sessionResults.map(r=>r.pts>=190?'🟨':r.pts>=140?'🟩':r.pts>=80?'🟦':'🟥').join('');
-  const text = `🎯 NUMBALL · Day ${currentDay}\n${bars}\n${total} / 1000 pts\nnumball.game`;
+  const bars = sessionResults.map(r=>r.pts>=190?'🟨':r.pts>=140?'🟩':r.pts>=70?'🟦':'🟥').join('');
+  const text = `🎯 NUMBALL · Day ${currentDay}\n${bars}\n${total} / 1000 pts\nnumball.vercel.app`;
   navigator.clipboard.writeText(text).then(()=>{
     document.getElementById('shareCopied').textContent='✓ Copied!';
     setTimeout(()=>{document.getElementById('shareCopied').textContent='';},2500);
