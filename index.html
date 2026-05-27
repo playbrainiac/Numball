@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NUMBALL — Daily Number Game</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0e0e10;
+  --surface: #1a1a1f;
+  --surface2: #242429;
+  --border: #2e2e36;
+  --text: #f0eff4;
+  --muted: #7a7a8c;
+  --accent: #f5c842;
+  --accent2: #ff6b35;
+  --green: #4ade80;
+  --red: #f87171;
+  --blue: #60a5fa;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; overflow-x: hidden; }
+.screen { display: none; flex-direction: column; min-height: 100vh; }
+.screen.active { display: flex; }
+
+/* HOME */
+#home { align-items: center; justify-content: center; padding: 2rem; position: relative; overflow: hidden; }
+#home::before { content:''; position:absolute; top:-200px; left:-200px; width:600px; height:600px; background:radial-gradient(circle, rgba(245,200,66,0.07) 0%, transparent 70%); pointer-events:none; }
+.logo { font-family:'Bebas Neue',sans-serif; font-size:clamp(72px,18vw,120px); letter-spacing:4px; color:var(--accent); line-height:1; text-align:center; }
+.logo-sub { font-size:13px; letter-spacing:5px; text-transform:uppercase; color:var(--muted); text-align:center; margin-top:4px; margin-bottom:3rem; }
+.home-btn { display:block; width:100%; max-width:320px; padding:18px; border-radius:4px; font-family:'DM Sans',sans-serif; font-size:15px; font-weight:600; letter-spacing:2px; text-transform:uppercase; cursor:pointer; border:none; transition:transform 0.1s, opacity 0.1s; margin:6px 0; }
+.home-btn:active { transform:scale(0.98); }
+.btn-primary { background:var(--accent); color:#0e0e10; }
+.btn-secondary { background:transparent; color:var(--text); border:1px solid var(--border); }
+.btn-secondary:hover { border-color:var(--muted); }
+.home-stats { display:flex; gap:2rem; margin-top:2.5rem; }
+.hstat { text-align:center; }
+.hstat-val { font-family:'Bebas Neue',sans-serif; font-size:36px; color:var(--accent); }
+.hstat-lbl { font-size:11px; letter-spacing:2px; color:var(--muted); text-transform:uppercase; }
+.streak-badge { font-size:13px; color:var(--accent2); margin-top:1rem; letter-spacing:1px; min-height:20px; }
+
+/* ARCHIVE */
+#archiveScreen { padding: 0; }
+#archive { padding:1.5rem; max-width:480px; margin:0 auto; width:100%; }
+.screen-header { display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem; }
+.back-btn { background:none; border:none; color:var(--muted); font-size:22px; cursor:pointer; padding:4px; line-height:1; font-family:inherit; }
+.back-btn:hover { color:var(--text); }
+.screen-title { font-family:'Bebas Neue',sans-serif; font-size:28px; letter-spacing:2px; color:var(--accent); }
+.archive-grid { display:flex; flex-direction:column; gap:8px; }
+.archive-item { display:flex; align-items:center; justify-content:space-between; padding:14px 16px; background:var(--surface); border-radius:4px; border:1px solid var(--border); cursor:pointer; transition:border-color 0.15s; }
+.archive-item:hover { border-color:var(--accent); }
+.archive-date { font-size:14px; font-weight:500; }
+.archive-score { font-family:'DM Mono',monospace; font-size:13px; color:var(--accent); }
+.archive-badge { font-size:10px; letter-spacing:1px; padding:3px 8px; border-radius:2px; background:var(--surface2); color:var(--muted); text-transform:uppercase; }
+.archive-badge.done { background:rgba(74,222,128,0.1); color:var(--green); }
+
+/* GAME */
+#gameScreen { padding: 0; }
+#game { max-width:480px; margin:0 auto; width:100%; padding:1.5rem; }
+.game-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; }
+.game-day { font-size:12px; letter-spacing:3px; color:var(--muted); text-transform:uppercase; }
+.progress-bar { height:3px; background:var(--surface2); border-radius:2px; margin-bottom:2rem; overflow:hidden; }
+.progress-fill { height:100%; background:var(--accent); transition:width 0.4s ease; }
+.q-card { background:var(--surface); border-radius:6px; border:1px solid var(--border); padding:2rem 1.5rem; margin-bottom:1.5rem; min-height:160px; display:flex; flex-direction:column; justify-content:space-between; }
+.q-cat-label { font-size:10px; letter-spacing:3px; color:var(--muted); text-transform:uppercase; margin-bottom:1rem; }
+.q-text { font-size:clamp(16px,4vw,20px); font-weight:300; line-height:1.5; color:var(--text); flex:1; }
+.input-area { margin-bottom:1.5rem; }
+.input-label { font-size:11px; letter-spacing:3px; color:var(--muted); text-transform:uppercase; margin-bottom:8px; }
+.input-row { display:flex; gap:10px; }
+.number-input { flex:1; background:var(--surface); border:1px solid var(--border); border-radius:4px; color:var(--text); font-family:'DM Mono',monospace; font-size:22px; padding:14px 16px; outline:none; transition:border-color 0.15s; }
+.number-input:focus { border-color:var(--accent); }
+.number-input::placeholder { color:var(--muted); }
+.submit-btn { background:var(--accent); color:#0e0e10; border:none; border-radius:4px; padding:14px 24px; font-family:'DM Sans',sans-serif; font-size:14px; font-weight:600; letter-spacing:1px; text-transform:uppercase; cursor:pointer; transition:opacity 0.1s, transform 0.1s; }
+.submit-btn:hover { opacity:0.9; }
+.submit-btn:active { transform:scale(0.97); }
+.submit-btn:disabled { opacity:0.3; cursor:not-allowed; }
+.result-row { background:var(--surface); border-radius:4px; padding:14px 16px; margin-bottom:8px; border-left:3px solid var(--border); animation:slideIn 0.3s ease; }
+.result-row.perfect { border-left-color:var(--accent); }
+.result-row.close { border-left-color:var(--green); }
+.result-row.okay { border-left-color:var(--blue); }
+.result-row.miss { border-left-color:var(--red); }
+@keyframes slideIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+.result-top { display:flex; justify-content:space-between; align-items:baseline; }
+.result-q { font-size:13px; color:var(--muted); flex:1; margin-right:1rem; }
+.result-pts { font-family:'Bebas Neue',sans-serif; font-size:22px; color:var(--accent); }
+.result-detail { font-size:12px; color:var(--muted); margin-top:4px; font-family:'DM Mono',monospace; }
+.result-detail span { color:var(--text); }
+.already-played { background:var(--surface); border-radius:6px; border:1px solid var(--border); padding:1.5rem; text-align:center; margin-bottom:1.5rem; }
+.ap-score { font-family:'Bebas Neue',sans-serif; font-size:48px; color:var(--accent); }
+.ap-label { font-size:12px; color:var(--muted); letter-spacing:2px; text-transform:uppercase; }
+
+/* RESULTS */
+#resultsScreen { padding: 0; }
+#results { max-width:480px; margin:0 auto; width:100%; padding:1.5rem; display:flex; flex-direction:column; align-items:center; }
+.results-logo { font-family:'Bebas Neue',sans-serif; font-size:48px; letter-spacing:4px; color:var(--accent); text-align:center; margin-bottom:4px; }
+.results-day { font-size:11px; letter-spacing:4px; color:var(--muted); text-transform:uppercase; text-align:center; margin-bottom:2rem; }
+.score-hero { text-align:center; margin-bottom:2rem; }
+.score-big { font-family:'Bebas Neue',sans-serif; font-size:96px; line-height:1; color:var(--accent); }
+.score-label { font-size:11px; letter-spacing:4px; color:var(--muted); text-transform:uppercase; margin-top:4px; }
+.score-rank { font-size:14px; color:var(--muted); margin-top:8px; }
+.streak-display { text-align:center; margin-bottom:1.5rem; font-size:13px; color:var(--accent2); letter-spacing:1px; min-height:20px; }
+.breakdown { width:100%; margin-bottom:1.5rem; }
+.breakdown-row { display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--surface2); }
+.brow-num { font-family:'DM Mono',monospace; font-size:11px; color:var(--muted); width:20px; }
+.brow-q { font-size:13px; color:var(--muted); flex:1; }
+.brow-bar-wrap { width:80px; height:4px; background:var(--surface2); border-radius:2px; flex-shrink:0; }
+.brow-bar { height:100%; border-radius:2px; }
+.brow-pts { font-family:'DM Mono',monospace; font-size:13px; color:var(--accent); width:40px; text-align:right; }
+.result-actions { display:flex; gap:10px; width:100%; }
+.action-btn { flex:1; padding:15px; border-radius:4px; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:600; letter-spacing:1px; text-transform:uppercase; cursor:pointer; border:none; transition:opacity 0.1s, transform 0.1s; }
+.action-btn:active { transform:scale(0.97); }
+.action-primary { background:var(--accent); color:#0e0e10; }
+.action-secondary { background:var(--surface); color:var(--text); border:1px solid var(--border); }
+.share-copied { font-size:12px; color:var(--green); text-align:center; margin-top:8px; height:18px; letter-spacing:1px; }
+.countdown-row { text-align:center; margin-top:1.5rem; font-size:12px; color:var(--muted); letter-spacing:2px; }
+.countdown-val { color:var(--text); font-family:'DM Mono',monospace; font-weight:500; }
+
+/* FX */
+.score-flash { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) scale(0.5); font-family:'Bebas Neue',sans-serif; font-size:72px; color:var(--accent); opacity:0; pointer-events:none; z-index:998; transition:all 0.4s cubic-bezier(0.175,0.885,0.32,1.275); }
+.score-flash.pop { opacity:1; transform:translate(-50%,-50%) scale(1); }
+.score-flash.fade { opacity:0; transform:translate(-50%,-60%) scale(1.1); }
+.toast { position:fixed; top:20px; left:50%; transform:translateX(-50%); background:var(--surface); border:1px solid var(--border); border-radius:4px; padding:12px 24px; font-size:13px; letter-spacing:1px; z-index:999; opacity:0; transition:opacity 0.2s; pointer-events:none; white-space:nowrap; }
+.toast.show { opacity:1; }
+.info-btn { background:none; border:1px solid var(--border); border-radius:50%; width:26px; height:26px; color:var(--muted); font-size:13px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; transition:border-color 0.15s, color 0.15s; flex-shrink:0; }
+.info-btn:hover { border-color:var(--accent); color:var(--accent); }
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:1000; display:none; align-items:center; justify-content:center; padding:1.5rem; }
+.modal-overlay.open { display:flex; }
+.modal { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:1.5rem; width:100%; max-width:360px; }
+.modal-title { font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:2px; color:var(--accent); margin-bottom:1rem; }
+.scoring-row { display:flex; align-items:center; gap:12px; padding:8px 0; border-bottom:1px solid var(--surface2); }
+.scoring-row:last-child { border-bottom:none; }
+.scoring-pct { font-family:'DM Mono',monospace; font-size:13px; color:var(--muted); width:90px; flex-shrink:0; }
+.scoring-bar-wrap { flex:1; height:4px; background:var(--surface2); border-radius:2px; }
+.scoring-bar { height:100%; border-radius:2px; }
+.scoring-pts { font-family:'Bebas Neue',sans-serif; font-size:18px; width:36px; text-align:right; flex-shrink:0; }
+.modal-close { margin-top:1.25rem; width:100%; padding:12px; background:var(--surface2); border:1px solid var(--border); border-radius:4px; color:var(--text); font-family:'DM Sans',sans-serif; font-size:13px; font-weight:600; letter-spacing:1px; text-transform:uppercase; cursor:pointer; }
+.modal-close:hover { border-color:var(--muted); }
+</style>
+</head>
+<body>
+
+<div class="screen active" id="home">
+  <div class="logo">NUMBALL</div>
+  <div class="logo-sub">Daily Number Game</div>
+  <button class="home-btn btn-primary" id="playTodayBtn" onclick="startToday()">Play Today</button>
+  <button class="home-btn btn-secondary" onclick="showArchive()">Previous Days</button>
+  <div class="home-stats">
+    <div class="hstat"><div class="hstat-val" id="homeAvg">—</div><div class="hstat-lbl">Avg Score</div></div>
+    <div class="hstat"><div class="hstat-val" id="homePlayed">0</div><div class="hstat-lbl">Played</div></div>
+    <div class="hstat"><div class="hstat-val" id="homeBest">—</div><div class="hstat-lbl">Best</div></div>
+  </div>
+  <div class="streak-badge" id="homeStreak"></div>
+</div>
+
+<div class="screen" id="archiveScreen">
+  <div id="archive">
+    <div class="screen-header">
+      <button class="back-btn" onclick="showHome()">←</button>
+      <div class="screen-title">Previous Days</div>
+    </div>
+    <div class="archive-grid" id="archiveGrid"></div>
+  </div>
+</div>
+
+<div class="screen" id="gameScreen">
+  <div id="game">
+    <div class="game-header">
+      <div class="game-day" id="gameDayLabel">Day 1</div>
+      <button class="back-btn" onclick="showHome()">✕</button>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+    <div id="alreadyPlayed" style="display:none">
+      <div class="already-played">
+        <div class="ap-score" id="apScore">—</div>
+        <div class="ap-label">Your score for this day</div>
+      </div>
+      <button class="home-btn btn-secondary" style="max-width:100%;margin:0 0 8px" onclick="showHome()">Back to Home</button>
+    </div>
+    <div id="questionArea">
+      <div class="q-card">
+        <div class="q-cat-label" id="qCat">—</div>
+        <div class="q-text" id="qText">Loading...</div>
+      </div>
+      <div class="input-area">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div class="input-label" style="margin-bottom:0">Your answer</div>
+          <button class="info-btn" onclick="document.getElementById('scoringModal').classList.add('open')" title="How scoring works">?</button>
+        </div>
+        <div class="input-row">
+          <input class="number-input" type="number" id="answerInput" placeholder="?" autocomplete="off">
+          <button class="submit-btn" id="submitBtn" onclick="submitAnswer()">Submit</button>
+        </div>
+      </div>
+      <div id="resultsList"></div>
+    </div>
+  </div>
+</div>
+
+<div class="screen" id="resultsScreen">
+  <div id="results">
+    <div class="results-logo">NUMBALL</div>
+    <div class="results-day" id="resultsDay">Day 1</div>
+    <div class="score-hero">
+      <div class="score-big" id="finalScore">0</div>
+      <div class="score-label">/ 1000 points</div>
+      <div class="score-rank" id="scoreRank"></div>
+    </div>
+    <div class="streak-display" id="resultsStreak"></div>
+    <div class="breakdown" id="resultsBreakdown"></div>
+    <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:10px;">
+      <button style="background:none;border:none;color:var(--muted);font-size:12px;letter-spacing:1px;cursor:pointer;display:flex;align-items:center;gap:6px;font-family:'DM Sans',sans-serif;" onclick="document.getElementById('scoringModal').classList.add('open')">
+        <span style="border:1px solid var(--border);border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;">?</span>
+        How scoring works
+      </button>
+    </div>
+    <div class="result-actions">
+      <button class="action-btn action-primary" onclick="shareScore()">Share Score</button>
+      <button class="action-btn action-secondary" onclick="showHome()">Home</button>
+    </div>
+    <div class="share-copied" id="shareCopied"></div>
+    <div class="countdown-row">Next puzzle in <span class="countdown-val" id="countdown">—</span></div>
+  </div>
+</div>
+
+<div class="score-flash" id="scoreFlash"></div>
+<div class="toast" id="toast"></div>
+
+<div class="modal-overlay" id="scoringModal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal">
+    <div class="modal-title">How Scoring Works</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:1rem;line-height:1.6;">Each question is scored by how close your guess is as a <strong style="color:var(--text);font-weight:500">percentage</strong> of the correct answer. Max 200 pts per question, 1000 total.</p>
+    <div class="scoring-row">
+      <div class="scoring-pct">Exact</div>
+      <div class="scoring-bar-wrap"><div class="scoring-bar" style="width:100%;background:var(--accent)"></div></div>
+      <div class="scoring-pts" style="color:var(--accent)">200</div>
+    </div>
+    <div class="scoring-row">
+      <div class="scoring-pct">Within 5%</div>
+      <div class="scoring-bar-wrap"><div class="scoring-bar" style="width:95%;background:var(--accent)"></div></div>
+      <div class="scoring-pts" style="color:var(--accent)">190</div>
+    </div>
+    <div class="scoring-row">
+      <div class="scoring-pct">Within 15%</div>
+      <div class="scoring-bar-wrap"><div class="scoring-bar" style="width:85%;background:var(--green)"></div></div>
+      <div class="scoring-pts" style="color:var(--green)">170</div>
+    </div>
+    <div class="scoring-row">
+      <div class="scoring-pct">Within 30%</div>
+      <div class="scoring-bar-wrap"><div class="scoring-bar" style="width:70%;background:var(--green)"></div></div>
+      <div class="scoring-pts" style="color:var(--green)">140</div>
+    </div>
+    <div class="scoring-row">
+      <div class="scoring-pct">Within 50%</div>
+      <div class="scoring-bar-wrap"><div class="scoring-bar" style="width:50%;background:var(--blue)"></div></div>
+      <div class="scoring-pts" style="color:var(--blue)">100</div>
+    </div>
+    <div class="scoring-row">
+      <div class="scoring-pct">Within 75%</div>
+      <div class="scoring-bar-wrap"><div class="scoring-bar" style="width:35%;background:var(--blue)"></div></div>
+      <div class="scoring-pts" style="color:var(--blue)">70</div>
+    </div>
+    <div class="scoring-row">
+      <div class="scoring-pct">Within 150%</div>
+      <div class="scoring-bar-wrap"><div class="scoring-bar" style="width:20%;background:var(--red)"></div></div>
+      <div class="scoring-pts" style="color:var(--red)">40</div>
+    </div>
+    <div class="scoring-row">
+      <div class="scoring-pct">Way off</div>
+      <div class="scoring-bar-wrap"><div class="scoring-bar" style="width:10%;background:var(--red)"></div></div>
+      <div class="scoring-pts" style="color:var(--red)">20</div>
+    </div>
+    <button class="modal-close" onclick="document.getElementById('scoringModal').classList.remove('open')">Got it</button>
+  </div>
+</div>
+
+<script>
+const QUESTIONS_DB = [
+  {q:"How many career home runs did Babe Ruth hit?",a:714,cat:"Sports"},
+  {q:"How many Super Bowls did Tom Brady win?",a:7,cat:"Sports"},
+  {q:"How many points did Wilt Chamberlain score in his famous single-game record?",a:100,cat:"Sports"},
+  {q:"How many gold medals did Michael Phelps win in his Olympic career?",a:23,cat:"Sports"},
+  {q:"How many consecutive games did Cal Ripken Jr. play?",a:2632,cat:"Sports"},
+  {q:"How many Grand Slam titles did Serena Williams win?",a:23,cat:"Sports"},
+  {q:"How many career strikeouts did Nolan Ryan throw?",a:5714,cat:"Sports"},
+  {q:"How many laps is the Daytona 500?",a:200,cat:"Sports"},
+  {q:"How many feet separate bases in Major League Baseball?",a:90,cat:"Sports"},
+  {q:"How many career goals did Wayne Gretzky score in the NHL?",a:894,cat:"Sports"},
+  {q:"How many times has Brazil won the FIFA World Cup?",a:5,cat:"Sports"},
+  {q:"In what year were the first modern Olympic Games held?",a:1896,cat:"Sports"},
+  {q:"How many career home runs did Barry Bonds hit?",a:762,cat:"Sports"},
+  {q:"How many seasons did Kobe Bryant play in the NBA?",a:20,cat:"Sports"},
+  {q:"How many Formula 1 World Championships did Michael Schumacher win?",a:7,cat:"Sports"},
+  {q:"How many inches from the floor is an NBA basketball hoop?",a:120,cat:"Sports"},
+  {q:"How many career rushing yards did Walter Payton accumulate?",a:16726,cat:"Sports"},
+  {q:"How many minutes are in a regulation soccer match?",a:90,cat:"Sports"},
+  {q:"How many holes are played in a standard round of golf?",a:18,cat:"Sports"},
+  {q:"How many times did Muhammad Ali win the heavyweight title?",a:3,cat:"Sports"},
+  {q:"How many Oscars has Meryl Streep won?",a:3,cat:"Pop Culture"},
+  {q:"How many weeks was 'Old Town Road' at number one on the Billboard Hot 100?",a:19,cat:"Pop Culture"},
+  {q:"How many seasons did Friends run on NBC?",a:10,cat:"Pop Culture"},
+  {q:"How many Harry Potter books are in the main series?",a:7,cat:"Pop Culture"},
+  {q:"How many Grammy Awards has Beyonce won?",a:32,cat:"Pop Culture"},
+  {q:"How many seasons did Game of Thrones run?",a:8,cat:"Pop Culture"},
+  {q:"How many number one Billboard hits did The Beatles have in the US?",a:20,cat:"Pop Culture"},
+  {q:"How many James Bond films had been made including No Time to Die?",a:25,cat:"Pop Culture"},
+  {q:"How many seasons did Breaking Bad run?",a:5,cat:"Pop Culture"},
+  {q:"How old was Elvis Presley when he died?",a:42,cat:"Pop Culture"},
+  {q:"How many seasons did Seinfeld run?",a:9,cat:"Pop Culture"},
+  {q:"How many studio albums did The Beatles release?",a:13,cat:"Pop Culture"},
+  {q:"How many seasons did The Sopranos run?",a:6,cat:"Pop Culture"},
+  {q:"How many studio albums did David Bowie release?",a:27,cat:"Pop Culture"},
+  {q:"How many studio albums did Prince release?",a:39,cat:"Pop Culture"},
+  {q:"How many books are in the published A Song of Ice and Fire series as of 2024?",a:5,cat:"Pop Culture"},
+  {q:"How many seasons did The Wire run on HBO?",a:5,cat:"Pop Culture"},
+  {q:"How many episodes of The Office US were made in total?",a:201,cat:"Pop Culture"},
+  {q:"How many films did Alfred Hitchcock direct?",a:53,cat:"Pop Culture"},
+  {q:"How many seasons did Breaking Bad and its spinoffs combined run?",a:11,cat:"Pop Culture"},
+  {q:"How many days did World War II last?",a:2194,cat:"History"},
+  {q:"How old was Napoleon Bonaparte when he died?",a:51,cat:"History"},
+  {q:"How many US presidents have been assassinated?",a:4,cat:"History"},
+  {q:"How many days was the Berlin Wall standing?",a:10316,cat:"History"},
+  {q:"How many amendments are in the US Constitution?",a:27,cat:"History"},
+  {q:"How old was Martin Luther King Jr. when he was assassinated?",a:39,cat:"History"},
+  {q:"How many years did Nelson Mandela spend in prison?",a:27,cat:"History"},
+  {q:"How many years did the Hundred Years War actually last?",a:116,cat:"History"},
+  {q:"How many people were on the Titanic when it sank?",a:2224,cat:"History"},
+  {q:"How many years did Prohibition last in the United States?",a:13,cat:"History"},
+  {q:"How many countries were original members of the United Nations in 1945?",a:51,cat:"History"},
+  {q:"How old was Abraham Lincoln when he was assassinated?",a:56,cat:"History"},
+  {q:"How many miles long was the Berlin Wall?",a:96,cat:"History"},
+  {q:"How many years did apartheid last in South Africa?",a:46,cat:"History"},
+  {q:"How old was Queen Elizabeth II when she died?",a:96,cat:"History"},
+  {q:"How many years after the Wright Brothers first flight did humans land on the moon?",a:66,cat:"History"},
+  {q:"How many terms did Franklin D. Roosevelt serve as US President?",a:4,cat:"History"},
+  {q:"How many US states were in the Union at the start of the Civil War?",a:34,cat:"History"},
+  {q:"How many countries did the British Empire control at its peak?",a:57,cat:"History"},
+  {q:"How many soldiers died in World War I?",a:20000000,cat:"History"},
+  {q:"How many countries are in Africa?",a:54,cat:"World Facts"},
+  {q:"How many countries share a border with China?",a:14,cat:"World Facts"},
+  {q:"How tall is Mount Everest in feet?",a:29032,cat:"World Facts"},
+  {q:"How many time zones does Russia span?",a:11,cat:"World Facts"},
+  {q:"How many countries are in the European Union as of 2024?",a:27,cat:"World Facts"},
+  {q:"How many languages are spoken in Papua New Guinea?",a:840,cat:"World Facts"},
+  {q:"How deep is the Mariana Trench in feet?",a:36000,cat:"World Facts"},
+  {q:"How many islands make up the Philippines?",a:7641,cat:"World Facts"},
+  {q:"How many floors does the Burj Khalifa have?",a:163,cat:"World Facts"},
+  {q:"How many official languages does South Africa have?",a:11,cat:"World Facts"},
+  {q:"How many countries does the Nile River flow through?",a:11,cat:"World Facts"},
+  {q:"How many countries are in the United Nations as of 2024?",a:193,cat:"World Facts"},
+  {q:"How many official languages does the United Nations have?",a:6,cat:"World Facts"},
+  {q:"How many countries border Germany?",a:9,cat:"World Facts"},
+  {q:"How tall is the Statue of Liberty from base to torch in feet?",a:305,cat:"World Facts"},
+  {q:"How many stories tall is the Empire State Building?",a:102,cat:"World Facts"},
+  {q:"How many countries does the equator pass through?",a:13,cat:"World Facts"},
+  {q:"How wide is the English Channel at its narrowest point in miles?",a:21,cat:"World Facts"},
+  {q:"How many countries are landlocked in Africa?",a:16,cat:"World Facts"},
+  {q:"How many feet above sea level is Denver, Colorado?",a:5280,cat:"World Facts"},
+  {q:"How much did the first iPhone cost at launch in 2007 in dollars?",a:499,cat:"Money"},
+  {q:"How much in billions did Facebook pay for Instagram in 2012?",a:1,cat:"Money"},
+  {q:"How much in billions did Elon Musk pay to acquire Twitter?",a:44,cat:"Money"},
+  {q:"How much does a 30-second Super Bowl ad cost in 2024 in millions of dollars?",a:7,cat:"Money"},
+  {q:"How much did a postage stamp cost in the US in 1970 in cents?",a:6,cat:"Money"},
+  {q:"What was the starting price of a Ford Model T in 1908 in dollars?",a:850,cat:"Money"},
+  {q:"How much does a single F-35 fighter jet cost in millions of dollars?",a:80,cat:"Money"},
+  {q:"How much in billions did Microsoft pay for Activision Blizzard in 2023?",a:69,cat:"Money"},
+  {q:"How much did the Salvator Mundi painting sell for in millions of dollars?",a:450,cat:"Money"},
+  {q:"How much does a Virgin Galactic space ticket cost in thousands of dollars?",a:450,cat:"Money"},
+  {q:"What was the budget for the original Star Wars 1977 film in millions of dollars?",a:11,cat:"Money"},
+  {q:"How much did the NASA Apollo program cost in today's dollars in billions?",a:280,cat:"Money"},
+  {q:"How much did the Eiffel Tower cost to build in today's dollars in millions?",a:40,cat:"Money"},
+  {q:"How much does it cost to operate the ISS annually in billions of dollars?",a:3.5,cat:"Money"},
+  {q:"How much in billions did Amazon earn in revenue in 2023?",a:575,cat:"Money"},
+  {q:"How much did a gallon of gas cost in the US in 1980 in dollars?",a:1.19,cat:"Money"},
+  {q:"How much in billions did the US spend on the Manhattan Project in today's dollars?",a:30,cat:"Money"},
+  {q:"What was Apple's market cap in trillions at the start of 2024?",a:3,cat:"Money"},
+  {q:"How much in millions did Nike pay Tiger Woods in his 1996 endorsement deal?",a:40,cat:"Money"},
+  {q:"How much in millions did the Pirates of the Caribbean On Stranger Tides cost to make?",a:379,cat:"Money"},
+  {q:"How many bones are in the adult human body?",a:206,cat:"Science"},
+  {q:"How many chromosomes do humans have?",a:46,cat:"Science"},
+  {q:"How many elements are on the periodic table?",a:118,cat:"Science"},
+  {q:"How many minutes does it take light from the Sun to reach Earth?",a:8,cat:"Science"},
+  {q:"How deep in feet is the average ocean?",a:12100,cat:"Science"},
+  {q:"How many miles is the diameter of the Earth?",a:7918,cat:"Science"},
+  {q:"At what temperature in Fahrenheit does water boil at sea level?",a:212,cat:"Science"},
+  {q:"How many muscles are in the human body?",a:600,cat:"Science"},
+  {q:"How many moons does Jupiter have?",a:95,cat:"Science"},
+  {q:"How many pounds does the human brain weigh on average?",a:3,cat:"Science"},
+  {q:"How many teeth does an adult human have?",a:32,cat:"Science"},
+  {q:"How many times does the average human heart beat per day?",a:100000,cat:"Science"},
+  {q:"How many feet long is the human small intestine?",a:20,cat:"Science"},
+  {q:"How many miles away is the Moon from Earth?",a:239000,cat:"Science"},
+  {q:"How many active volcanoes are there on Earth?",a:1500,cat:"Science"},
+  {q:"How many gallons of blood does the human heart pump per day?",a:2000,cat:"Science"},
+  {q:"How many trillion cells are in the human body?",a:37,cat:"Science"},
+  {q:"How many years does it take Pluto to orbit the Sun?",a:248,cat:"Science"},
+  {q:"How many million earths could fit inside the Sun?",a:1.3,cat:"Science"},
+  {q:"How many billion neurons are in the human brain?",a:86,cat:"Science"}
+];
+
+const QUESTIONS_PER_DAY = 5;
+const EPOCH = new Date('2026-01-01');
+
+function getDayNumber() {
+  return Math.floor((Date.now() - EPOCH) / 86400000) + 1;
+}
+function getDateLabel(d) {
+  return new Date(EPOCH.getTime() + (d-1)*86400000).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+}
+function getDayQuestions(dayNum) {
+  let s = dayNum * 137 + 42;
+  const used = new Set(), idxs = [];
+  while (idxs.length < QUESTIONS_PER_DAY) {
+    s = (s * 1664525 + 1013904223) & 0x7fffffff;
+    const i = s % QUESTIONS_DB.length;
+    if (!used.has(i)) { used.add(i); idxs.push(i); }
+  }
+  return idxs.map(i => QUESTIONS_DB[i]);
+}
+function calcScore(guess, answer) {
+  if (guess === answer) return 200;
+  const ratio = Math.abs(guess - answer) / (Math.abs(answer) || 1);
+  if (ratio <= 0.05) return 190;
+  if (ratio <= 0.15) return 170;
+  if (ratio <= 0.30) return 140;
+  if (ratio <= 0.50) return 100;
+  if (ratio <= 0.75) return 70;
+  if (ratio <= 1.50) return 40;
+  return 20;
+}
+function getScoreClass(pts) {
+  return pts>=190?'perfect':pts>=140?'close':pts>=70?'okay':'miss';
+}
+function getBarColor(pts) {
+  return pts>=190?'var(--accent)':pts>=140?'var(--green)':pts>=70?'var(--blue)':'var(--red)';
+}
+function getRank(total) {
+  const p = total / 1000;
+  if (p>=0.95) return "Perfect — are you a calculator?";
+  if (p>=0.80) return "Excellent — sharp instincts";
+  if (p>=0.60) return "Solid — better than most";
+  if (p>=0.40) return "Getting there — nice try";
+  return "Keep guessing — you'll improve";
+}
+
+function store() { try { return JSON.parse(localStorage.getItem('numball_v1')||'{}'); } catch { return {}; } }
+function save(d) { localStorage.setItem('numball_v1', JSON.stringify(d)); }
+function getDayRecord(d) { return store()[`day_${d}`]||null; }
+function saveDayRecord(d, results) {
+  const s = store();
+  s[`day_${d}`] = {results, total: results.reduce((a,r)=>a+r.pts,0), ts:Date.now()};
+  save(s); updateStreak(d);
+}
+function updateStreak(dayNum) {
+  const s = store();
+  let st = s.streak||{current:0,lastDay:0,best:0};
+  if (dayNum === st.lastDay) return;
+  st.current = (dayNum === st.lastDay+1) ? st.current+1 : 1;
+  st.best = Math.max(st.best, st.current);
+  st.lastDay = dayNum;
+  s.streak = st; save(s);
+}
+function getStreak() { return store().streak||{current:0,best:0,lastDay:0}; }
+function getStats() {
+  const s = store(); let played=0,total=0,best=0;
+  Object.keys(s).filter(k=>k.startsWith('day_')).forEach(k=>{
+    played++; total+=s[k].total; best=Math.max(best,s[k].total);
+  });
+  return {played, avg: played?Math.round(total/played):0, best};
+}
+
+let currentDay=1, currentQs=[], currentIdx=0, sessionResults=[];
+
+function showHome() {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('home').classList.add('active');
+  const stats = getStats();
+  document.getElementById('homeAvg').textContent = stats.avg||'—';
+  document.getElementById('homePlayed').textContent = stats.played;
+  document.getElementById('homeBest').textContent = stats.best||'—';
+  const streak = getStreak(), today = getDayNumber();
+  const active = streak.lastDay===today||streak.lastDay===today-1;
+  document.getElementById('homeStreak').textContent = (streak.current>1&&active)?`🔥 ${streak.current}-day streak`:'';
+  const rec = getDayRecord(today);
+  document.getElementById('playTodayBtn').textContent = rec ? "View Today's Results" : "Play Today";
+}
+
+function startToday() { startDay(getDayNumber()); }
+
+function startDay(d) {
+  currentDay=d; currentQs=getDayQuestions(d); currentIdx=0; sessionResults=[];
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('gameScreen').classList.add('active');
+  document.getElementById('gameDayLabel').textContent = `Day ${d} — ${getDateLabel(d)}`;
+  const rec = getDayRecord(d);
+  if (rec) {
+    document.getElementById('alreadyPlayed').style.display='block';
+    document.getElementById('questionArea').style.display='none';
+    document.getElementById('apScore').textContent = rec.total;
+    document.getElementById('progressFill').style.width='100%';
+  } else {
+    document.getElementById('alreadyPlayed').style.display='none';
+    document.getElementById('questionArea').style.display='block';
+    document.getElementById('resultsList').innerHTML='';
+    loadQuestion();
+  }
+}
+
+function loadQuestion() {
+  if (currentIdx >= currentQs.length) { finishGame(); return; }
+  const q = currentQs[currentIdx];
+  document.getElementById('qCat').textContent = q.cat;
+  document.getElementById('qText').textContent = q.q;
+  document.getElementById('answerInput').value='';
+  document.getElementById('answerInput').focus();
+  document.getElementById('progressFill').style.width = `${(currentIdx/currentQs.length)*100}%`;
+  document.getElementById('submitBtn').disabled=false;
+}
+
+function submitAnswer() {
+  const raw = document.getElementById('answerInput').value.trim();
+  if (!raw) return;
+  const guess = parseFloat(raw);
+  if (isNaN(guess)) { showToast('Enter a valid number'); return; }
+  document.getElementById('submitBtn').disabled=true;
+  const q = currentQs[currentIdx];
+  const pts = calcScore(guess, q.a);
+  sessionResults.push({q:q.q, cat:q.cat, guess, answer:q.a, pts});
+  showScoreFlash(pts);
+  const cls = getScoreClass(pts);
+  const diff = guess>q.a ? `+${(guess-q.a).toLocaleString()}` : `-${Math.abs(guess-q.a).toLocaleString()}`;
+  const exact = guess===q.a;
+  const el = document.createElement('div');
+  el.className = `result-row ${cls}`;
+  el.innerHTML = `<div class="result-top"><div class="result-q">${currentIdx+1}. ${q.q}</div><div class="result-pts">+${pts}</div></div><div class="result-detail">You: <span>${guess.toLocaleString()}</span> &nbsp;·&nbsp; Answer: <span>${q.a.toLocaleString()}</span> &nbsp;·&nbsp; ${exact?'<span style="color:var(--accent)">Exact!</span>':`Off by <span>${diff}</span>`}</div>`;
+  document.getElementById('resultsList').prepend(el);
+  currentIdx++;
+  setTimeout(()=>{ currentIdx<currentQs.length?loadQuestion():finishGame(); }, 900);
+}
+
+function finishGame() {
+  saveDayRecord(currentDay, sessionResults);
+  document.getElementById('progressFill').style.width='100%';
+  setTimeout(showResults, 600);
+}
+
+function showResults() {
+  const total = sessionResults.reduce((a,r)=>a+r.pts,0);
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('resultsScreen').classList.add('active');
+  document.getElementById('resultsDay').textContent = `Day ${currentDay} — ${getDateLabel(currentDay)}`;
+  document.getElementById('finalScore').textContent = total;
+  document.getElementById('scoreRank').textContent = getRank(total);
+  const streak = getStreak();
+  document.getElementById('resultsStreak').textContent = streak.current>1 ? `🔥 ${streak.current}-day streak!` : '';
+  document.getElementById('resultsBreakdown').innerHTML = sessionResults.map((r,i)=>{
+    const pct = Math.round((r.pts/200)*100);
+    return `<div class="breakdown-row"><div class="brow-num">${i+1}</div><div class="brow-q">${r.q.length>45?r.q.substring(0,44)+'…':r.q}</div><div class="brow-bar-wrap"><div class="brow-bar" style="width:${pct}%;background:${getBarColor(r.pts)}"></div></div><div class="brow-pts">+${r.pts}</div></div>`;
+  }).join('');
+  startCountdown();
+}
+
+function shareScore() {
+  const total = sessionResults.reduce((a,r)=>a+r.pts,0);
+  const bars = sessionResults.map(r=>r.pts>=190?'🟨':r.pts>=140?'🟩':r.pts>=70?'🟦':'🟥').join('');
+  const text = `🎯 NUMBALL · Day ${currentDay}\n${bars}\n${total} / 1000 pts\nnumball.game`;
+  navigator.clipboard.writeText(text).then(()=>{
+    document.getElementById('shareCopied').textContent='✓ Copied!';
+    setTimeout(()=>{document.getElementById('shareCopied').textContent='';},2500);
+  }).catch(()=>{ showToast('Copy this: '+text); });
+}
+
+function showArchive() {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('archiveScreen').classList.add('active');
+  const grid = document.getElementById('archiveGrid');
+  grid.innerHTML='';
+  const today = getDayNumber();
+  for (let d=today; d>=Math.max(1,today-29); d--) {
+    const rec = getDayRecord(d);
+    const item = document.createElement('div');
+    item.className='archive-item'+(rec?' played':'');
+    item.onclick=()=>startDay(d);
+    const lbl = d===today?'Today':getDateLabel(d);
+    item.innerHTML=`<div class="archive-date">${lbl} <span style="font-size:11px;color:var(--muted)">Day ${d}</span></div>${rec?`<div style="display:flex;align-items:center;gap:10px"><div class="archive-score">${rec.total} pts</div><div class="archive-badge done">Done</div></div>`:`<div class="archive-badge">Play</div>`}`;
+    grid.appendChild(item);
+  }
+}
+
+function startCountdown() {
+  const tick=()=>{
+    const now=new Date(), tm=new Date(now); tm.setHours(24,0,0,0);
+    const diff=tm-now, h=Math.floor(diff/3600000), m=Math.floor((diff%3600000)/60000), s=Math.floor((diff%60000)/1000);
+    const el=document.getElementById('countdown');
+    if(el) el.textContent=`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  };
+  tick(); setInterval(tick,1000);
+}
+
+function showScoreFlash(pts) {
+  const el=document.getElementById('scoreFlash');
+  el.textContent=`+${pts}`;
+  el.style.color=pts>=900?'var(--accent)':pts>=600?'var(--green)':pts>=300?'var(--blue)':'var(--red)';
+  el.classList.remove('pop','fade'); void el.offsetWidth;
+  el.classList.add('pop');
+  setTimeout(()=>el.classList.add('fade'),500);
+  setTimeout(()=>el.classList.remove('pop','fade'),900);
+}
+
+function showToast(msg) {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+document.addEventListener('keydown', e=>{
+  if (e.key==='Enter' && document.getElementById('gameScreen').classList.contains('active')) {
+    const btn=document.getElementById('submitBtn');
+    if (btn && !btn.disabled) submitAnswer();
+  }
+});
+
+showHome();
+</script>
+</body>
+</html>
