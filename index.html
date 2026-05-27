@@ -24,7 +24,6 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
 .screen { display: none; flex-direction: column; min-height: 100vh; }
 .screen.active { display: flex; }
 
-/* HOME */
 #home { align-items: center; justify-content: center; padding: 2rem; position: relative; overflow: hidden; }
 #home::before { content:''; position:absolute; top:-200px; left:-200px; width:600px; height:600px; background:radial-gradient(circle, rgba(245,200,66,0.07) 0%, transparent 70%); pointer-events:none; }
 .logo { font-family:'Bebas Neue',sans-serif; font-size:clamp(72px,18vw,120px); letter-spacing:4px; color:var(--accent); line-height:1; text-align:center; }
@@ -40,7 +39,6 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
 .hstat-lbl { font-size:11px; letter-spacing:2px; color:var(--muted); text-transform:uppercase; }
 .streak-badge { font-size:13px; color:var(--accent2); margin-top:1rem; letter-spacing:1px; min-height:20px; }
 
-/* ARCHIVE */
 #archiveScreen { padding: 0; }
 #archive { padding:1.5rem; max-width:480px; margin:0 auto; width:100%; }
 .screen-header { display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem; }
@@ -55,7 +53,6 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
 .archive-badge { font-size:10px; letter-spacing:1px; padding:3px 8px; border-radius:2px; background:var(--surface2); color:var(--muted); text-transform:uppercase; }
 .archive-badge.done { background:rgba(74,222,128,0.1); color:var(--green); }
 
-/* GAME */
 #gameScreen { padding: 0; }
 #game { max-width:480px; margin:0 auto; width:100%; padding:1.5rem; }
 .game-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; }
@@ -89,8 +86,13 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
 .already-played { background:var(--surface); border-radius:6px; border:1px solid var(--border); padding:1.5rem; text-align:center; margin-bottom:1.5rem; }
 .ap-score { font-family:'Bebas Neue',sans-serif; font-size:48px; color:var(--accent); }
 .ap-label { font-size:12px; color:var(--muted); letter-spacing:2px; text-transform:uppercase; }
+.loading-card { background:var(--surface); border-radius:6px; border:1px solid var(--border); padding:2rem 1.5rem; margin-bottom:1.5rem; min-height:160px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; }
+.loading-dot { width:8px; height:8px; border-radius:50%; background:var(--accent); display:inline-block; animation:pulse 1.2s ease-in-out infinite; }
+.loading-dot:nth-child(2) { animation-delay:0.2s; }
+.loading-dot:nth-child(3) { animation-delay:0.4s; }
+@keyframes pulse { 0%,80%,100%{opacity:0.2;transform:scale(0.8)} 40%{opacity:1;transform:scale(1)} }
+.loading-text { font-size:12px; letter-spacing:3px; color:var(--muted); text-transform:uppercase; }
 
-/* RESULTS */
 #resultsScreen { padding: 0; }
 #results { max-width:480px; margin:0 auto; width:100%; padding:1.5rem; display:flex; flex-direction:column; align-items:center; }
 .results-logo { font-family:'Bebas Neue',sans-serif; font-size:48px; letter-spacing:4px; color:var(--accent); text-align:center; margin-bottom:4px; }
@@ -116,7 +118,6 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
 .countdown-row { text-align:center; margin-top:1.5rem; font-size:12px; color:var(--muted); letter-spacing:2px; }
 .countdown-val { color:var(--text); font-family:'DM Mono',monospace; font-weight:500; }
 
-/* FX */
 .score-flash { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) scale(0.5); font-family:'Bebas Neue',sans-serif; font-size:72px; color:var(--accent); opacity:0; pointer-events:none; z-index:998; transition:all 0.4s cubic-bezier(0.175,0.885,0.32,1.275); }
 .score-flash.pop { opacity:1; transform:translate(-50%,-50%) scale(1); }
 .score-flash.fade { opacity:0; transform:translate(-50%,-60%) scale(1.1); }
@@ -178,9 +179,19 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
       <button class="home-btn btn-secondary" style="max-width:100%;margin:0 0 8px" onclick="showHome()">Back to Home</button>
     </div>
     <div id="questionArea">
-      <div class="q-card">
-        <div class="q-cat-label" id="qCat">—</div>
-        <div class="q-text" id="qText">Loading...</div>
+      <div class="q-card" id="qCard">
+        <div class="loading-card" id="loadingCard">
+          <div>
+            <span class="loading-dot"></span>
+            <span class="loading-dot"></span>
+            <span class="loading-dot"></span>
+          </div>
+          <div class="loading-text">Loading today's questions</div>
+        </div>
+        <div id="questionContent" style="display:none">
+          <div class="q-cat-label" id="qCat">—</div>
+          <div class="q-text" id="qText">Loading...</div>
+        </div>
       </div>
       <div class="input-area">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
@@ -189,7 +200,7 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
         </div>
         <div class="input-row">
           <input class="number-input" type="number" id="answerInput" placeholder="?" autocomplete="off">
-          <button class="submit-btn" id="submitBtn" onclick="submitAnswer()">Submit</button>
+          <button class="submit-btn" id="submitBtn" onclick="submitAnswer()" disabled>Submit</button>
         </div>
       </div>
       <div id="resultsList"></div>
@@ -229,173 +240,85 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
 <div class="modal-overlay" id="scoringModal" onclick="if(event.target===this)this.classList.remove('open')">
   <div class="modal">
     <div class="modal-title">How Scoring Works</div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:1rem;line-height:1.6;">Each question is scored by how close your guess is as a <strong style="color:var(--text);font-weight:500">percentage</strong> of the correct answer. Max 200 pts per question, 1000 total.</p>
-    <div class="scoring-row">
-      <div class="scoring-pct">Exact</div>
-      <div class="scoring-bar-wrap"><div class="scoring-bar" style="width:100%;background:var(--accent)"></div></div>
-      <div class="scoring-pts" style="color:var(--accent)">200</div>
-    </div>
-    <div class="scoring-row">
-      <div class="scoring-pct">Within 5%</div>
-      <div class="scoring-bar-wrap"><div class="scoring-bar" style="width:95%;background:var(--accent)"></div></div>
-      <div class="scoring-pts" style="color:var(--accent)">190</div>
-    </div>
-    <div class="scoring-row">
-      <div class="scoring-pct">Within 15%</div>
-      <div class="scoring-bar-wrap"><div class="scoring-bar" style="width:85%;background:var(--green)"></div></div>
-      <div class="scoring-pts" style="color:var(--green)">170</div>
-    </div>
-    <div class="scoring-row">
-      <div class="scoring-pct">Within 30%</div>
-      <div class="scoring-bar-wrap"><div class="scoring-bar" style="width:70%;background:var(--green)"></div></div>
-      <div class="scoring-pts" style="color:var(--green)">140</div>
-    </div>
-    <div class="scoring-row">
-      <div class="scoring-pct">Within 50%</div>
-      <div class="scoring-bar-wrap"><div class="scoring-bar" style="width:50%;background:var(--blue)"></div></div>
-      <div class="scoring-pts" style="color:var(--blue)">100</div>
-    </div>
-    <div class="scoring-row">
-      <div class="scoring-pct">Within 75%</div>
-      <div class="scoring-bar-wrap"><div class="scoring-bar" style="width:35%;background:var(--blue)"></div></div>
-      <div class="scoring-pts" style="color:var(--blue)">70</div>
-    </div>
-    <div class="scoring-row">
-      <div class="scoring-pct">Within 150%</div>
-      <div class="scoring-bar-wrap"><div class="scoring-bar" style="width:20%;background:var(--red)"></div></div>
-      <div class="scoring-pts" style="color:var(--red)">40</div>
-    </div>
-    <div class="scoring-row">
-      <div class="scoring-pct">Way off</div>
-      <div class="scoring-bar-wrap"><div class="scoring-bar" style="width:10%;background:var(--red)"></div></div>
-      <div class="scoring-pts" style="color:var(--red)">20</div>
-    </div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:1rem;line-height:1.6;">Each question scored by how close your guess is as a <strong style="color:var(--text);font-weight:500">percentage</strong> of the correct answer. Max 200 pts per question, 1000 total.</p>
+    <div class="scoring-row"><div class="scoring-pct">Exact</div><div class="scoring-bar-wrap"><div class="scoring-bar" style="width:100%;background:var(--accent)"></div></div><div class="scoring-pts" style="color:var(--accent)">200</div></div>
+    <div class="scoring-row"><div class="scoring-pct">Within 5%</div><div class="scoring-bar-wrap"><div class="scoring-bar" style="width:95%;background:var(--accent)"></div></div><div class="scoring-pts" style="color:var(--accent)">190</div></div>
+    <div class="scoring-row"><div class="scoring-pct">Within 15%</div><div class="scoring-bar-wrap"><div class="scoring-bar" style="width:85%;background:var(--green)"></div></div><div class="scoring-pts" style="color:var(--green)">170</div></div>
+    <div class="scoring-row"><div class="scoring-pct">Within 30%</div><div class="scoring-bar-wrap"><div class="scoring-bar" style="width:70%;background:var(--green)"></div></div><div class="scoring-pts" style="color:var(--green)">140</div></div>
+    <div class="scoring-row"><div class="scoring-pct">Within 50%</div><div class="scoring-bar-wrap"><div class="scoring-bar" style="width:50%;background:var(--blue)"></div></div><div class="scoring-pts" style="color:var(--blue)">100</div></div>
+    <div class="scoring-row"><div class="scoring-pct">Within 75%</div><div class="scoring-bar-wrap"><div class="scoring-bar" style="width:35%;background:var(--blue)"></div></div><div class="scoring-pts" style="color:var(--blue)">70</div></div>
+    <div class="scoring-row"><div class="scoring-pct">Within 150%</div><div class="scoring-bar-wrap"><div class="scoring-bar" style="width:20%;background:var(--red)"></div></div><div class="scoring-pts" style="color:var(--red)">40</div></div>
+    <div class="scoring-row"><div class="scoring-pct">Way off</div><div class="scoring-bar-wrap"><div class="scoring-bar" style="width:10%;background:var(--red)"></div></div><div class="scoring-pts" style="color:var(--red)">20</div></div>
     <button class="modal-close" onclick="document.getElementById('scoringModal').classList.remove('open')">Got it</button>
   </div>
 </div>
 
 <script>
-const QUESTIONS_DB = [
+const SB_URL = 'https://mdybfpiwbfkidqjloadk.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1keWJmcGl3YmZraWRxamxvYWRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5MDQyOTUsImV4cCI6MjA5NTQ4MDI5NX0.kIMS2nx1Fd6XdDVokXnzSuD3KwUtiAomlSTehL-rDCc';
+
+// Fallback question bank in case Supabase is unavailable
+const FALLBACK_QUESTIONS = [
   {q:"How many career home runs did Babe Ruth hit?",a:714,cat:"Sports"},
   {q:"How many Super Bowls did Tom Brady win?",a:7,cat:"Sports"},
   {q:"How many points did Wilt Chamberlain score in his famous single-game record?",a:100,cat:"Sports"},
   {q:"How many gold medals did Michael Phelps win in his Olympic career?",a:23,cat:"Sports"},
-  {q:"How many consecutive games did Cal Ripken Jr. play?",a:2632,cat:"Sports"},
   {q:"How many Grand Slam titles did Serena Williams win?",a:23,cat:"Sports"},
   {q:"How many career strikeouts did Nolan Ryan throw?",a:5714,cat:"Sports"},
-  {q:"How many laps is the Daytona 500?",a:200,cat:"Sports"},
-  {q:"How many feet separate bases in Major League Baseball?",a:90,cat:"Sports"},
+  {q:"How many consecutive games did Cal Ripken Jr. play?",a:2632,cat:"Sports"},
   {q:"How many career goals did Wayne Gretzky score in the NHL?",a:894,cat:"Sports"},
   {q:"How many times has Brazil won the FIFA World Cup?",a:5,cat:"Sports"},
-  {q:"In what year were the first modern Olympic Games held?",a:1896,cat:"Sports"},
   {q:"How many career home runs did Barry Bonds hit?",a:762,cat:"Sports"},
-  {q:"How many seasons did Kobe Bryant play in the NBA?",a:20,cat:"Sports"},
-  {q:"How many Formula 1 World Championships did Michael Schumacher win?",a:7,cat:"Sports"},
-  {q:"How many inches from the floor is an NBA basketball hoop?",a:120,cat:"Sports"},
-  {q:"How many career rushing yards did Walter Payton accumulate?",a:16726,cat:"Sports"},
-  {q:"How many minutes are in a regulation soccer match?",a:90,cat:"Sports"},
-  {q:"How many holes are played in a standard round of golf?",a:18,cat:"Sports"},
-  {q:"How many times did Muhammad Ali win the heavyweight title?",a:3,cat:"Sports"},
   {q:"How many Oscars has Meryl Streep won?",a:3,cat:"Pop Culture"},
   {q:"How many weeks was 'Old Town Road' at number one on the Billboard Hot 100?",a:19,cat:"Pop Culture"},
   {q:"How many seasons did Friends run on NBC?",a:10,cat:"Pop Culture"},
-  {q:"How many Harry Potter books are in the main series?",a:7,cat:"Pop Culture"},
   {q:"How many Grammy Awards has Beyonce won?",a:32,cat:"Pop Culture"},
   {q:"How many seasons did Game of Thrones run?",a:8,cat:"Pop Culture"},
   {q:"How many number one Billboard hits did The Beatles have in the US?",a:20,cat:"Pop Culture"},
-  {q:"How many James Bond films had been made including No Time to Die?",a:25,cat:"Pop Culture"},
   {q:"How many seasons did Breaking Bad run?",a:5,cat:"Pop Culture"},
   {q:"How old was Elvis Presley when he died?",a:42,cat:"Pop Culture"},
-  {q:"How many seasons did Seinfeld run?",a:9,cat:"Pop Culture"},
   {q:"How many studio albums did The Beatles release?",a:13,cat:"Pop Culture"},
-  {q:"How many seasons did The Sopranos run?",a:6,cat:"Pop Culture"},
-  {q:"How many studio albums did David Bowie release?",a:27,cat:"Pop Culture"},
-  {q:"How many studio albums did Prince release?",a:39,cat:"Pop Culture"},
-  {q:"How many books are in the published A Song of Ice and Fire series as of 2024?",a:5,cat:"Pop Culture"},
-  {q:"How many seasons did The Wire run on HBO?",a:5,cat:"Pop Culture"},
-  {q:"How many episodes of The Office US were made in total?",a:201,cat:"Pop Culture"},
-  {q:"How many films did Alfred Hitchcock direct?",a:53,cat:"Pop Culture"},
-  {q:"How many seasons did Breaking Bad and its spinoffs combined run?",a:11,cat:"Pop Culture"},
+  {q:"How many seasons did Seinfeld run?",a:9,cat:"Pop Culture"},
   {q:"How many days did World War II last?",a:2194,cat:"History"},
   {q:"How old was Napoleon Bonaparte when he died?",a:51,cat:"History"},
   {q:"How many US presidents have been assassinated?",a:4,cat:"History"},
-  {q:"How many days was the Berlin Wall standing?",a:10316,cat:"History"},
   {q:"How many amendments are in the US Constitution?",a:27,cat:"History"},
   {q:"How old was Martin Luther King Jr. when he was assassinated?",a:39,cat:"History"},
   {q:"How many years did Nelson Mandela spend in prison?",a:27,cat:"History"},
-  {q:"How many years did the Hundred Years War actually last?",a:116,cat:"History"},
   {q:"How many people were on the Titanic when it sank?",a:2224,cat:"History"},
   {q:"How many years did Prohibition last in the United States?",a:13,cat:"History"},
-  {q:"How many countries were original members of the United Nations in 1945?",a:51,cat:"History"},
   {q:"How old was Abraham Lincoln when he was assassinated?",a:56,cat:"History"},
-  {q:"How many miles long was the Berlin Wall?",a:96,cat:"History"},
   {q:"How many years did apartheid last in South Africa?",a:46,cat:"History"},
-  {q:"How old was Queen Elizabeth II when she died?",a:96,cat:"History"},
-  {q:"How many years after the Wright Brothers first flight did humans land on the moon?",a:66,cat:"History"},
-  {q:"How many terms did Franklin D. Roosevelt serve as US President?",a:4,cat:"History"},
-  {q:"How many US states were in the Union at the start of the Civil War?",a:34,cat:"History"},
-  {q:"How many countries did the British Empire control at its peak?",a:57,cat:"History"},
-  {q:"How many soldiers died in World War I?",a:20000000,cat:"History"},
   {q:"How many countries are in Africa?",a:54,cat:"World Facts"},
   {q:"How many countries share a border with China?",a:14,cat:"World Facts"},
   {q:"How tall is Mount Everest in feet?",a:29032,cat:"World Facts"},
   {q:"How many time zones does Russia span?",a:11,cat:"World Facts"},
-  {q:"How many countries are in the European Union as of 2024?",a:27,cat:"World Facts"},
-  {q:"How many languages are spoken in Papua New Guinea?",a:840,cat:"World Facts"},
-  {q:"How deep is the Mariana Trench in feet?",a:36000,cat:"World Facts"},
   {q:"How many islands make up the Philippines?",a:7641,cat:"World Facts"},
   {q:"How many floors does the Burj Khalifa have?",a:163,cat:"World Facts"},
-  {q:"How many official languages does South Africa have?",a:11,cat:"World Facts"},
-  {q:"How many countries does the Nile River flow through?",a:11,cat:"World Facts"},
   {q:"How many countries are in the United Nations as of 2024?",a:193,cat:"World Facts"},
-  {q:"How many official languages does the United Nations have?",a:6,cat:"World Facts"},
   {q:"How many countries border Germany?",a:9,cat:"World Facts"},
   {q:"How tall is the Statue of Liberty from base to torch in feet?",a:305,cat:"World Facts"},
   {q:"How many stories tall is the Empire State Building?",a:102,cat:"World Facts"},
-  {q:"How many countries does the equator pass through?",a:13,cat:"World Facts"},
-  {q:"How wide is the English Channel at its narrowest point in miles?",a:21,cat:"World Facts"},
-  {q:"How many countries are landlocked in Africa?",a:16,cat:"World Facts"},
-  {q:"How many feet above sea level is Denver, Colorado?",a:5280,cat:"World Facts"},
   {q:"How much did the first iPhone cost at launch in 2007 in dollars?",a:499,cat:"Money"},
-  {q:"How much in billions did Facebook pay for Instagram in 2012?",a:1,cat:"Money"},
   {q:"How much in billions did Elon Musk pay to acquire Twitter?",a:44,cat:"Money"},
   {q:"How much does a 30-second Super Bowl ad cost in 2024 in millions of dollars?",a:7,cat:"Money"},
-  {q:"How much did a postage stamp cost in the US in 1970 in cents?",a:6,cat:"Money"},
   {q:"What was the starting price of a Ford Model T in 1908 in dollars?",a:850,cat:"Money"},
-  {q:"How much does a single F-35 fighter jet cost in millions of dollars?",a:80,cat:"Money"},
   {q:"How much in billions did Microsoft pay for Activision Blizzard in 2023?",a:69,cat:"Money"},
   {q:"How much did the Salvator Mundi painting sell for in millions of dollars?",a:450,cat:"Money"},
-  {q:"How much does a Virgin Galactic space ticket cost in thousands of dollars?",a:450,cat:"Money"},
-  {q:"What was the budget for the original Star Wars 1977 film in millions of dollars?",a:11,cat:"Money"},
-  {q:"How much did the NASA Apollo program cost in today's dollars in billions?",a:280,cat:"Money"},
-  {q:"How much did the Eiffel Tower cost to build in today's dollars in millions?",a:40,cat:"Money"},
-  {q:"How much does it cost to operate the ISS annually in billions of dollars?",a:3.5,cat:"Money"},
-  {q:"How much in billions did Amazon earn in revenue in 2023?",a:575,cat:"Money"},
-  {q:"How much did a gallon of gas cost in the US in 1980 in dollars?",a:1.19,cat:"Money"},
-  {q:"How much in billions did the US spend on the Manhattan Project in today's dollars?",a:30,cat:"Money"},
   {q:"What was Apple's market cap in trillions at the start of 2024?",a:3,cat:"Money"},
-  {q:"How much in millions did Nike pay Tiger Woods in his 1996 endorsement deal?",a:40,cat:"Money"},
-  {q:"How much in millions did the Pirates of the Caribbean On Stranger Tides cost to make?",a:379,cat:"Money"},
+  {q:"How much did a gallon of gas cost in the US in 1980 in dollars?",a:1.19,cat:"Money"},
+  {q:"How much in billions did Amazon earn in revenue in 2023?",a:575,cat:"Money"},
+  {q:"How much does a single F-35 fighter jet cost in millions of dollars?",a:80,cat:"Money"},
   {q:"How many bones are in the adult human body?",a:206,cat:"Science"},
   {q:"How many chromosomes do humans have?",a:46,cat:"Science"},
   {q:"How many elements are on the periodic table?",a:118,cat:"Science"},
   {q:"How many minutes does it take light from the Sun to reach Earth?",a:8,cat:"Science"},
-  {q:"How deep in feet is the average ocean?",a:12100,cat:"Science"},
-  {q:"How many miles is the diameter of the Earth?",a:7918,cat:"Science"},
-  {q:"At what temperature in Fahrenheit does water boil at sea level?",a:212,cat:"Science"},
   {q:"How many muscles are in the human body?",a:600,cat:"Science"},
   {q:"How many moons does Jupiter have?",a:95,cat:"Science"},
-  {q:"How many pounds does the human brain weigh on average?",a:3,cat:"Science"},
   {q:"How many teeth does an adult human have?",a:32,cat:"Science"},
   {q:"How many times does the average human heart beat per day?",a:100000,cat:"Science"},
-  {q:"How many feet long is the human small intestine?",a:20,cat:"Science"},
   {q:"How many miles away is the Moon from Earth?",a:239000,cat:"Science"},
-  {q:"How many active volcanoes are there on Earth?",a:1500,cat:"Science"},
-  {q:"How many gallons of blood does the human heart pump per day?",a:2000,cat:"Science"},
-  {q:"How many trillion cells are in the human body?",a:37,cat:"Science"},
-  {q:"How many years does it take Pluto to orbit the Sun?",a:248,cat:"Science"},
-  {q:"How many million earths could fit inside the Sun?",a:1.3,cat:"Science"},
-  {q:"How many billion neurons are in the human brain?",a:86,cat:"Science"}
+  {q:"How many billion neurons are in the human brain?",a:86,cat:"Science"},
 ];
 
 const QUESTIONS_PER_DAY = 5;
@@ -407,16 +330,49 @@ function getDayNumber() {
 function getDateLabel(d) {
   return new Date(EPOCH.getTime() + (d-1)*86400000).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
 }
-function getDayQuestions(dayNum) {
+
+// Fetch questions from Supabase, fall back to local bank
+async function fetchDayQuestions(dayNum) {
+  try {
+    const res = await fetch(
+      `${SB_URL}/rest/v1/numball_questions?day_number=eq.${dayNum}&select=questions`,
+      { headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` } }
+    );
+    const data = await res.json();
+    if (data && data.length > 0) {
+      return JSON.parse(data[0].questions);
+    }
+  } catch(e) {
+    console.log('Supabase fetch failed, using fallback:', e);
+  }
+  // Fallback: deterministic shuffle from local bank
   let s = dayNum * 137 + 42;
   const used = new Set(), idxs = [];
   while (idxs.length < QUESTIONS_PER_DAY) {
     s = (s * 1664525 + 1013904223) & 0x7fffffff;
-    const i = s % QUESTIONS_DB.length;
+    const i = s % FALLBACK_QUESTIONS.length;
     if (!used.has(i)) { used.add(i); idxs.push(i); }
   }
-  return idxs.map(i => QUESTIONS_DB[i]);
+  return idxs.map(i => FALLBACK_QUESTIONS[i]);
 }
+
+// Save score to Supabase
+async function savePlayToSupabase(dayNum, score) {
+  try {
+    await fetch(`${SB_URL}/rest/v1/numball_plays`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: SB_KEY,
+        Authorization: `Bearer ${SB_KEY}`,
+      },
+      body: JSON.stringify({ day_number: dayNum, score }),
+    });
+  } catch(e) {
+    console.log('Failed to save play:', e);
+  }
+}
+
 function calcScore(guess, answer) {
   if (guess === answer) return 200;
   const ratio = Math.abs(guess - answer) / (Math.abs(answer) || 1);
@@ -428,14 +384,10 @@ function calcScore(guess, answer) {
   if (ratio <= 1.50) return 40;
   return 20;
 }
-function getScoreClass(pts) {
-  return pts>=190?'perfect':pts>=140?'close':pts>=70?'okay':'miss';
-}
-function getBarColor(pts) {
-  return pts>=190?'var(--accent)':pts>=140?'var(--green)':pts>=70?'var(--blue)':'var(--red)';
-}
+function getScoreClass(pts) { return pts>=190?'perfect':pts>=140?'close':pts>=70?'okay':'miss'; }
+function getBarColor(pts) { return pts>=190?'var(--accent)':pts>=140?'var(--green)':pts>=70?'var(--blue)':'var(--red)'; }
 function getRank(total) {
-  const p = total / 1000;
+  const p = total/1000;
   if (p>=0.95) return "Perfect — are you a calculator?";
   if (p>=0.80) return "Excellent — sharp instincts";
   if (p>=0.60) return "Solid — better than most";
@@ -443,8 +395,8 @@ function getRank(total) {
   return "Keep guessing — you'll improve";
 }
 
-function store() { try { return JSON.parse(localStorage.getItem('numball_v1')||'{}'); } catch { return {}; } }
-function save(d) { localStorage.setItem('numball_v1', JSON.stringify(d)); }
+function store() { try { return JSON.parse(localStorage.getItem('numball_v2')||'{}'); } catch { return {}; } }
+function save(d) { localStorage.setItem('numball_v2', JSON.stringify(d)); }
 function getDayRecord(d) { return store()[`day_${d}`]||null; }
 function saveDayRecord(d, results) {
   const s = store();
@@ -487,23 +439,34 @@ function showHome() {
 
 function startToday() { startDay(getDayNumber()); }
 
-function startDay(d) {
-  currentDay=d; currentQs=getDayQuestions(d); currentIdx=0; sessionResults=[];
+async function startDay(d) {
+  currentDay=d; currentIdx=0; sessionResults=[];
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('gameScreen').classList.add('active');
   document.getElementById('gameDayLabel').textContent = `Day ${d} — ${getDateLabel(d)}`;
+  document.getElementById('progressFill').style.width='0%';
+
   const rec = getDayRecord(d);
   if (rec) {
     document.getElementById('alreadyPlayed').style.display='block';
     document.getElementById('questionArea').style.display='none';
     document.getElementById('apScore').textContent = rec.total;
     document.getElementById('progressFill').style.width='100%';
-  } else {
-    document.getElementById('alreadyPlayed').style.display='none';
-    document.getElementById('questionArea').style.display='block';
-    document.getElementById('resultsList').innerHTML='';
-    loadQuestion();
+    return;
   }
+
+  document.getElementById('alreadyPlayed').style.display='none';
+  document.getElementById('questionArea').style.display='block';
+  document.getElementById('resultsList').innerHTML='';
+  document.getElementById('loadingCard').style.display='flex';
+  document.getElementById('questionContent').style.display='none';
+  document.getElementById('submitBtn').disabled=true;
+
+  currentQs = await fetchDayQuestions(d);
+  document.getElementById('loadingCard').style.display='none';
+  document.getElementById('questionContent').style.display='block';
+  document.getElementById('submitBtn').disabled=false;
+  loadQuestion();
 }
 
 function loadQuestion() {
@@ -528,7 +491,7 @@ function submitAnswer() {
   sessionResults.push({q:q.q, cat:q.cat, guess, answer:q.a, pts});
   showScoreFlash(pts);
   const cls = getScoreClass(pts);
-  const diff = guess>q.a ? `+${(guess-q.a).toLocaleString()}` : `-${Math.abs(guess-q.a).toLocaleString()}`;
+  const diff = guess>q.a?`+${(guess-q.a).toLocaleString()}`:`-${Math.abs(guess-q.a).toLocaleString()}`;
   const exact = guess===q.a;
   const el = document.createElement('div');
   el.className = `result-row ${cls}`;
@@ -540,6 +503,8 @@ function submitAnswer() {
 
 function finishGame() {
   saveDayRecord(currentDay, sessionResults);
+  const total = sessionResults.reduce((a,r)=>a+r.pts,0);
+  savePlayToSupabase(currentDay, total);
   document.getElementById('progressFill').style.width='100%';
   setTimeout(showResults, 600);
 }
@@ -552,7 +517,7 @@ function showResults() {
   document.getElementById('finalScore').textContent = total;
   document.getElementById('scoreRank').textContent = getRank(total);
   const streak = getStreak();
-  document.getElementById('resultsStreak').textContent = streak.current>1 ? `🔥 ${streak.current}-day streak!` : '';
+  document.getElementById('resultsStreak').textContent = streak.current>1?`🔥 ${streak.current}-day streak!`:'';
   document.getElementById('resultsBreakdown').innerHTML = sessionResults.map((r,i)=>{
     const pct = Math.round((r.pts/200)*100);
     return `<div class="breakdown-row"><div class="brow-num">${i+1}</div><div class="brow-q">${r.q.length>45?r.q.substring(0,44)+'…':r.q}</div><div class="brow-bar-wrap"><div class="brow-bar" style="width:${pct}%;background:${getBarColor(r.pts)}"></div></div><div class="brow-pts">+${r.pts}</div></div>`;
@@ -567,7 +532,7 @@ function shareScore() {
   navigator.clipboard.writeText(text).then(()=>{
     document.getElementById('shareCopied').textContent='✓ Copied!';
     setTimeout(()=>{document.getElementById('shareCopied').textContent='';},2500);
-  }).catch(()=>{ showToast('Copy this: '+text); });
+  }).catch(()=>{ showToast('Copy: '+text); });
 }
 
 function showArchive() {
@@ -600,7 +565,7 @@ function startCountdown() {
 function showScoreFlash(pts) {
   const el=document.getElementById('scoreFlash');
   el.textContent=`+${pts}`;
-  el.style.color=pts>=900?'var(--accent)':pts>=600?'var(--green)':pts>=300?'var(--blue)':'var(--red)';
+  el.style.color=pts>=190?'var(--accent)':pts>=140?'var(--green)':pts>=70?'var(--blue)':'var(--red)';
   el.classList.remove('pop','fade'); void el.offsetWidth;
   el.classList.add('pop');
   setTimeout(()=>el.classList.add('fade'),500);
