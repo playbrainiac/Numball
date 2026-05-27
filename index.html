@@ -569,7 +569,7 @@ function showResults() {
 function shareScore() {
   const total = sessionResults.reduce((a,r)=>a+r.pts,0);
   const bars = sessionResults.map(r=>r.pts>=190?'🟨':r.pts>=140?'🟩':r.pts>=80?'🟦':'🟥').join('');
-  const text = `🎯 NUMBALL · Day ${currentDay}\n${bars}\n${total} / 1000 pts\nnumball.vercel.app`;
+  const text = `🎯 NUMBALL · Day ${currentDay}\n${bars}\n${total} / 1000 pts\nnumball.game`;
   navigator.clipboard.writeText(text).then(()=>{
     document.getElementById('shareCopied').textContent='✓ Copied!';
     setTimeout(()=>{document.getElementById('shareCopied').textContent='';},2500);
