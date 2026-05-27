@@ -528,11 +528,15 @@ function showResults() {
 function shareScore() {
   const total = sessionResults.reduce((a,r)=>a+r.pts,0);
   const bars = sessionResults.map(r=>r.pts>=190?'🟨':r.pts>=140?'🟩':r.pts>=70?'🟦':'🟥').join('');
-  const text = `🎯 NUMBALL · Day ${currentDay}\n${bars}\n${total} / 1000 pts\nCan you beat me? → numball.vercel.app`;
-  navigator.clipboard.writeText(text).then(()=>{
-    document.getElementById('shareCopied').textContent='✓ Copied!';
-    setTimeout(()=>{document.getElementById('shareCopied').textContent='';},2500);
-  }).catch(()=>{ showToast('Copy: '+text); });
+  const text = `🎯 NUMBALL · Day ${currentDay}\n${bars}\n${total} / 1000 pts\nCan you beat me?\nnumball.vercel.app`;
+  if (navigator.share) {
+    navigator.share({ text }).catch(()=>{});
+  } else {
+    navigator.clipboard.writeText(text).then(()=>{
+      document.getElementById('shareCopied').textContent='✓ Copied!';
+      setTimeout(()=>{document.getElementById('shareCopied').textContent='';},2500);
+    }).catch(()=>{ showToast('Copy: '+text); });
+  }
 }
 
 function showArchive() {
