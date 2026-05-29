@@ -119,6 +119,10 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
 .countdown-val { color:var(--text); font-family:'DM Mono',monospace; font-weight:500; }
 
 .score-flash { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) scale(0.5); font-family:'Bebas Neue',sans-serif; font-size:72px; color:var(--accent); opacity:0; pointer-events:none; z-index:998; transition:all 0.4s cubic-bezier(0.175,0.885,0.32,1.275); }
+.global-stats { display:flex; gap:1rem; width:100%; margin-bottom:1.5rem; }
+.gstat { flex:1; background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:12px; text-align:center; }
+.gstat-val { font-family:'Bebas Neue',sans-serif; font-size:28px; color:var(--accent); line-height:1; }
+.gstat-lbl { font-size:10px; letter-spacing:2px; color:var(--muted); text-transform:uppercase; margin-top:4px; }
 .score-flash.pop { opacity:1; transform:translate(-50%,-50%) scale(1); }
 .score-flash.fade { opacity:0; transform:translate(-50%,-60%) scale(1.1); }
 .toast { position:fixed; top:20px; left:50%; transform:translateX(-50%); background:var(--surface); border:1px solid var(--border); border-radius:4px; padding:12px 24px; font-size:13px; letter-spacing:1px; z-index:999; opacity:0; transition:opacity 0.2s; pointer-events:none; white-space:nowrap; }
@@ -218,6 +222,20 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
       <div class="score-rank" id="scoreRank"></div>
     </div>
     <div class="streak-display" id="resultsStreak"></div>
+    <div class="global-stats" id="globalStats" style="display:none">
+      <div class="gstat">
+        <div class="gstat-val" id="gstatPlayers">—</div>
+        <div class="gstat-lbl">Players today</div>
+      </div>
+      <div class="gstat">
+        <div class="gstat-val" id="gstatAvg">—</div>
+        <div class="gstat-lbl">Avg score</div>
+      </div>
+      <div class="gstat">
+        <div class="gstat-val" id="gstatPct">—</div>
+        <div class="gstat-lbl">You beat</div>
+      </div>
+    </div>
     <div class="breakdown" id="resultsBreakdown"></div>
     <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:10px;">
       <button style="background:none;border:none;color:var(--muted);font-size:12px;letter-spacing:1px;cursor:pointer;display:flex;align-items:center;gap:6px;font-family:'DM Sans',sans-serif;" onclick="document.getElementById('scoringModal').classList.add('open')">
@@ -508,6 +526,27 @@ function finishGame() {
   setTimeout(showResults, 600);
 }
 
+async function fetchGlobalStats(dayNum, myScore) {
+  try {
+    const res = await fetch(
+      `${SB_URL}/rest/v1/numball_plays?day_number=eq.${dayNum}&select=score`,
+      { headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` } }
+    );
+    const data = await res.json();
+    if (!data || data.length === 0) return;
+    const scores = data.map(r => r.score);
+    const count = scores.length;
+    const avg = Math.round(scores.reduce((a,b)=>a+b,0) / count);
+    const beat = Math.round((scores.filter(s => s < myScore).length / count) * 100);
+    document.getElementById('gstatPlayers').textContent = count;
+    document.getElementById('gstatAvg').textContent = avg;
+    document.getElementById('gstatPct').textContent = `${beat}%`;
+    document.getElementById('globalStats').style.display = 'flex';
+  } catch(e) {
+    console.log('Failed to fetch global stats:', e);
+  }
+}
+
 function showResults() {
   const total = sessionResults.reduce((a,r)=>a+r.pts,0);
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
@@ -522,6 +561,7 @@ function showResults() {
     return `<div class="breakdown-row"><div class="brow-num">${i+1}</div><div class="brow-q">${r.q.length>45?r.q.substring(0,44)+'…':r.q}</div><div class="brow-bar-wrap"><div class="brow-bar" style="width:${pct}%;background:${getBarColor(r.pts)}"></div></div><div class="brow-pts">+${r.pts}</div></div>`;
   }).join('');
   startCountdown();
+  fetchGlobalStats(currentDay, total);
 }
 
 function shareScore() {
