@@ -2,7 +2,7 @@ const SUPABASE_URL = 'https://mdybfpiwbfkidqjloadk.supabase.co';
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
 
-const EPOCH = new Date('2026-01-01');
+const EPOCH = new Date('2026-05-27');
 
 function getDayNumber() {
   return Math.floor((Date.now() - EPOCH) / 86400000) + 1;
