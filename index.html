@@ -272,15 +272,15 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
 <div class="modal-overlay" id="scoringModal" onclick="if(event.target===this)this.classList.remove('open')">
   <div class="modal">
     <div class="modal-title">How Scoring Works</div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:1rem;line-height:1.6;">Score is based on how close your guess is as a <strong style="color:var(--text);font-weight:500">percentage</strong> of the correct answer. The closer you are, the more points — and you always get something. Max 200 per question, 1000 total.</p>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:1rem;line-height:1.6;">Score is based on how close your guess is as a <strong style="color:var(--text);font-weight:500">percentage</strong> of the correct answer. Linear down to 50% off, then exponential — you always get something. Max 200 per question, 1000 total.</p>
     <div class="scoring-row"><div class="scoring-pct">Exact</div><div class="scoring-bar-wrap"><div class="scoring-bar" style="width:100%;background:var(--accent)"></div></div><div class="scoring-pts" style="color:var(--accent)">200</div></div>
-    <div class="scoring-row"><div class="scoring-pct">2% off</div><div class="scoring-bar-wrap"><div class="scoring-bar" style="width:96%;background:var(--accent)"></div></div><div class="scoring-pts" style="color:var(--accent)">192</div></div>
-    <div class="scoring-row"><div class="scoring-pct">5% off</div><div class="scoring-bar-wrap"><div class="scoring-bar" style="width:90%;background:var(--green)"></div></div><div class="scoring-pts" style="color:var(--green)">181</div></div>
-    <div class="scoring-row"><div class="scoring-pct">10% off</div><div class="scoring-bar-wrap"><div class="scoring-bar" style="width:82%;background:var(--green)"></div></div><div class="scoring-pts" style="color:var(--green)">164</div></div>
-    <div class="scoring-row"><div class="scoring-pct">20% off</div><div class="scoring-bar-wrap"><div class="scoring-bar" style="width:67%;background:var(--green)"></div></div><div class="scoring-pts" style="color:var(--green)">134</div></div>
-    <div class="scoring-row"><div class="scoring-pct">30% off</div><div class="scoring-bar-wrap"><div class="scoring-bar" style="width:55%;background:var(--blue)"></div></div><div class="scoring-pts" style="color:var(--blue)">110</div></div>
-    <div class="scoring-row"><div class="scoring-pct">50% off</div><div class="scoring-bar-wrap"><div class="scoring-bar" style="width:37%;background:var(--blue)"></div></div><div class="scoring-pts" style="color:var(--blue)">74</div></div>
-    <div class="scoring-row"><div class="scoring-pct">100% off</div><div class="scoring-bar-wrap"><div class="scoring-bar" style="width:14%;background:var(--red)"></div></div><div class="scoring-pts" style="color:var(--red)">27</div></div>
+    <div class="scoring-row"><div class="scoring-pct">5% off</div><div class="scoring-bar-wrap"><div class="scoring-bar" style="width:95%;background:var(--accent)"></div></div><div class="scoring-pts" style="color:var(--accent)">190</div></div>
+    <div class="scoring-row"><div class="scoring-pct">10% off</div><div class="scoring-bar-wrap"><div class="scoring-bar" style="width:90%;background:var(--green)"></div></div><div class="scoring-pts" style="color:var(--green)">180</div></div>
+    <div class="scoring-row"><div class="scoring-pct">20% off</div><div class="scoring-bar-wrap"><div class="scoring-bar" style="width:80%;background:var(--green)"></div></div><div class="scoring-pts" style="color:var(--green)">160</div></div>
+    <div class="scoring-row"><div class="scoring-pct">30% off</div><div class="scoring-bar-wrap"><div class="scoring-bar" style="width:70%;background:var(--green)"></div></div><div class="scoring-pts" style="color:var(--green)">140</div></div>
+    <div class="scoring-row"><div class="scoring-pct">50% off</div><div class="scoring-bar-wrap"><div class="scoring-bar" style="width:50%;background:var(--blue)"></div></div><div class="scoring-pts" style="color:var(--blue)">100</div></div>
+    <div class="scoring-row"><div class="scoring-pct">75% off</div><div class="scoring-bar-wrap"><div class="scoring-bar" style="width:39%;background:var(--blue)"></div></div><div class="scoring-pts" style="color:var(--blue)">78</div></div>
+    <div class="scoring-row"><div class="scoring-pct">100% off</div><div class="scoring-bar-wrap"><div class="scoring-bar" style="width:30%;background:var(--red)"></div></div><div class="scoring-pts" style="color:var(--red)">61</div></div>
     <div class="scoring-row"><div class="scoring-pct">Way off</div><div class="scoring-bar-wrap"><div class="scoring-bar" style="width:5%;background:var(--red)"></div></div><div class="scoring-pts" style="color:var(--red)">1+</div></div>
     <button class="modal-close" onclick="document.getElementById('scoringModal').classList.remove('open')">Got it</button>
   </div>
@@ -409,7 +409,11 @@ async function savePlayToSupabase(dayNum, score) {
 function calcScore(guess, answer) {
   if (guess === answer) return 200;
   const ratio = Math.abs(guess - answer) / (Math.abs(answer) || 1);
-  return Math.max(1, Math.round(200 * Math.exp(-2 * ratio)));
+  if (ratio <= 0.5) {
+    return Math.max(1, Math.round(200 - 200 * ratio));
+  } else {
+    return Math.max(1, Math.round(100 * Math.exp(-(ratio - 0.5))));
+  }
 }
 function getScoreClass(pts) {
   return pts>=180?'perfect':pts>=140?'close':pts>=80?'okay':'miss';
@@ -547,12 +551,20 @@ async function fetchAlreadyPlayedStats(dayNum, myScore) {
       `${SB_URL}/rest/v1/numball_plays?day_number=eq.${dayNum}&select=score`,
       { headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` } }
     );
+    console.log('Already played stats status:', res.status);
     const data = await res.json();
-    if (!data || data.length === 0) return;
+    console.log('Already played stats data:', data);
+    if (!data || data.length === 0) {
+      document.getElementById('agstatPlayers').textContent = '1';
+      document.getElementById('agstatAvg').textContent = myScore;
+      document.getElementById('agstatPct').textContent = '—';
+      document.getElementById('alreadyGlobalStats').style.display = 'flex';
+      return;
+    }
     const scores = data.map(r => r.score);
     const count = scores.length;
     const avg = Math.round(scores.reduce((a,b)=>a+b,0) / count);
-    const beat = Math.round((scores.filter(s => s < myScore).length / count) * 100);
+    const beat = count > 1 ? Math.round((scores.filter(s => s < myScore).length / count) * 100) : 100;
     document.getElementById('agstatPlayers').textContent = count;
     document.getElementById('agstatAvg').textContent = avg;
     document.getElementById('agstatPct').textContent = `${beat}%`;
@@ -568,12 +580,20 @@ async function fetchGlobalStats(dayNum, myScore) {
       `${SB_URL}/rest/v1/numball_plays?day_number=eq.${dayNum}&select=score`,
       { headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` } }
     );
+    console.log('Global stats status:', res.status);
     const data = await res.json();
-    if (!data || data.length === 0) return;
+    console.log('Global stats data:', data);
+    if (!data || data.length === 0) {
+      document.getElementById('gstatPlayers').textContent = '1';
+      document.getElementById('gstatAvg').textContent = myScore;
+      document.getElementById('gstatPct').textContent = '—';
+      document.getElementById('globalStats').style.display = 'flex';
+      return;
+    }
     const scores = data.map(r => r.score);
     const count = scores.length;
     const avg = Math.round(scores.reduce((a,b)=>a+b,0) / count);
-    const beat = Math.round((scores.filter(s => s < myScore).length / count) * 100);
+    const beat = count > 1 ? Math.round((scores.filter(s => s < myScore).length / count) * 100) : 100;
     document.getElementById('gstatPlayers').textContent = count;
     document.getElementById('gstatAvg').textContent = avg;
     document.getElementById('gstatPct').textContent = `${beat}%`;
