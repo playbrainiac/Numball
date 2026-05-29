@@ -180,6 +180,20 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
         <div class="ap-score" id="apScore">—</div>
         <div class="ap-label">Your score for this day</div>
       </div>
+      <div class="global-stats" id="alreadyGlobalStats" style="display:none">
+        <div class="gstat">
+          <div class="gstat-val" id="agstatPlayers">—</div>
+          <div class="gstat-lbl">Players today</div>
+        </div>
+        <div class="gstat">
+          <div class="gstat-val" id="agstatAvg">—</div>
+          <div class="gstat-lbl">Avg score</div>
+        </div>
+        <div class="gstat">
+          <div class="gstat-val" id="agstatPct">—</div>
+          <div class="gstat-lbl">You beat</div>
+        </div>
+      </div>
       <button class="home-btn btn-secondary" style="max-width:100%;margin:0 0 8px" onclick="showHome()">Back to Home</button>
     </div>
     <div id="questionArea">
@@ -469,6 +483,7 @@ async function startDay(d) {
     document.getElementById('questionArea').style.display='none';
     document.getElementById('apScore').textContent = rec.total;
     document.getElementById('progressFill').style.width='100%';
+    fetchAlreadyPlayedStats(d, rec.total);
     return;
   }
 
@@ -524,6 +539,27 @@ function finishGame() {
   savePlayToSupabase(currentDay, total);
   document.getElementById('progressFill').style.width='100%';
   setTimeout(showResults, 600);
+}
+
+async function fetchAlreadyPlayedStats(dayNum, myScore) {
+  try {
+    const res = await fetch(
+      `${SB_URL}/rest/v1/numball_plays?day_number=eq.${dayNum}&select=score`,
+      { headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` } }
+    );
+    const data = await res.json();
+    if (!data || data.length === 0) return;
+    const scores = data.map(r => r.score);
+    const count = scores.length;
+    const avg = Math.round(scores.reduce((a,b)=>a+b,0) / count);
+    const beat = Math.round((scores.filter(s => s < myScore).length / count) * 100);
+    document.getElementById('agstatPlayers').textContent = count;
+    document.getElementById('agstatAvg').textContent = avg;
+    document.getElementById('agstatPct').textContent = `${beat}%`;
+    document.getElementById('alreadyGlobalStats').style.display = 'flex';
+  } catch(e) {
+    console.log('Failed to fetch already played stats:', e);
+  }
 }
 
 async function fetchGlobalStats(dayNum, myScore) {
