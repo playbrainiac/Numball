@@ -15,22 +15,38 @@ function getTodayDate() {
 async function questionsExistForDay(dayNumber) {
   const res = await fetch(
     `${SUPABASE_URL}/rest/v1/numball_questions?day_number=eq.${dayNumber}&select=id`,
-    {
-      headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`,
-      },
-    }
+    { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
   );
   const data = await res.json();
   return data && data.length > 0;
 }
 
-async function generateQuestions(dayNumber) {
-  const categories = ['Sports', 'Pop Culture', 'History', 'World Facts', 'Money', 'Science', 'Food & Drink', 'Music', 'Movies & TV', 'Geography'];
+async function getAllPreviousQuestions() {
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/numball_questions?select=questions&order=day_number.asc`,
+    { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
+  );
+  const data = await res.json();
+  if (!data || data.length === 0) return [];
+  const all = [];
+  data.forEach(row => {
+    try {
+      const qs = JSON.parse(row.questions);
+      qs.forEach(q => all.push(q.q));
+    } catch(e) {}
+  });
+  return all;
+}
+
+async function generateQuestions(dayNumber, previousQuestions) {
+  const categories = ['Sports', 'Pop Culture', 'History', 'World Facts', 'Money', 'Science', 'Food & Drink', 'Music', 'Movies & TV', 'Geography', 'Nature', 'Technology', 'Literature', 'Art', 'Politics'];
   const picked = categories.sort(() => Math.random() - 0.5).slice(0, 5);
 
-  const prompt = `Generate exactly 5 number trivia questions for a daily guessing game called NUMBALL. Each question must have a single definitive numerical answer.
+  const neverRepeat = previousQuestions.length > 0
+    ? `\n\nNEVER repeat or closely paraphrase any of these ${previousQuestions.length} questions that have already been used:\n${previousQuestions.map((q, i) => `${i+1}. ${q}`).join('\n')}`
+    : '';
+
+  const prompt = `Generate exactly 5 brand new number trivia questions for a daily guessing game called NUMBALL. Each question must have a single definitive numerical answer.
 
 Categories to use (one per question): ${picked.join(', ')}
 
@@ -38,9 +54,9 @@ Rules:
 - Questions must have a single, verifiable numerical answer
 - Answers should be interesting and surprising but not impossibly obscure
 - Mix easy and hard questions
-- No repeat topics from these recent ones to keep things fresh
 - Avoid questions where the answer is 0 or 1
 - Make the questions fun and engaging
+- Every question must be completely unique — never repeat a topic, subject, or answer that has been used before${neverRepeat}
 
 Return ONLY a JSON array with exactly 5 objects, no other text:
 [
@@ -64,7 +80,6 @@ Return ONLY a JSON array with exactly 5 objects, no other text:
 
   const data = await response.json();
   console.log('Anthropic response status:', response.status);
-  console.log('Anthropic response:', JSON.stringify(data));
   if (!data.content || !data.content[0]) {
     throw new Error('No content in Anthropic response: ' + JSON.stringify(data));
   }
@@ -91,21 +106,21 @@ async function saveQuestions(dayNumber, date, questions) {
 }
 
 export default async function handler(req, res) {
-  // Allow manual trigger via GET or scheduled POST
   try {
     const dayNumber = getDayNumber();
     const date = getTodayDate();
 
-    // Check if already generated
     const exists = await questionsExistForDay(dayNumber);
     if (exists) {
       return res.status(200).json({ message: `Questions for day ${dayNumber} already exist` });
     }
 
-    // Generate via Claude
-    const questions = await generateQuestions(dayNumber);
+    // Pull full history so Claude never repeats
+    const previousQuestions = await getAllPreviousQuestions();
+    console.log(`Generating questions for day ${dayNumber}, avoiding ${previousQuestions.length} previous questions`);
 
-    // Save to Supabase
+    const questions = await generateQuestions(dayNumber, previousQuestions);
+
     const saved = await saveQuestions(dayNumber, date, questions);
     if (!saved) {
       return res.status(500).json({ error: 'Failed to save questions to Supabase' });
